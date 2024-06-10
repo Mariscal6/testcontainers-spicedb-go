@@ -79,12 +79,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
+	c := &spiceDBContainer{Container: container, secretKey: cfg.SecretKey, model: cfg.Model}
+
 	endpoint, err := container.Endpoint(ctx, "")
 	if err != nil {
-		container.Terminate(ctx)
-		return nil, err
+		return c, err
 	}
-	return &spiceDBContainer{Container: container, secretKey: cfg.SecretKey, endpoint: endpoint, model: cfg.Model}, nil
+
+	c.endpoint = endpoint
+
+	return c, nil
 }
 
 func WithOtel(otelProvider string, enpoint string) testcontainers.CustomizeRequestOption {

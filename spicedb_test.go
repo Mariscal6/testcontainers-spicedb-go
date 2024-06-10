@@ -9,9 +9,10 @@ import (
 	"github.com/authzed/grpcutil"
 	spicedbcontainer "github.com/mariscal6/testcontainers-spicedb-go"
 	"github.com/mariscal6/testcontainers-spicedb-go/testdata"
-	"github.com/testcontainers/testcontainers-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestSpiceDB(t *testing.T) {
@@ -20,7 +21,6 @@ func TestSpiceDB(t *testing.T) {
 	container, err := spicedbcontainer.RunContainer(ctx,
 		testcontainers.WithImage("authzed/spicedb:v1.33.0"),
 	)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,6 @@ func TestSpiceDB(t *testing.T) {
 		grpcutil.WithInsecureBearerToken(container.SecretKey()),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +63,6 @@ func TestSpiceDBSecretCustomizer(t *testing.T) {
 		testcontainers.WithImage("authzed/spicedb:v1.33.0"),
 		customizer,
 	)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +79,6 @@ func TestSpiceDBSecretCustomizer(t *testing.T) {
 		grpcutil.WithInsecureBearerToken(secretKey),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +106,6 @@ func TestSpiceModelCustomizer(t *testing.T) {
 		testcontainers.WithImage("authzed/spicedb:v1.33.0"),
 		modelCustomizer,
 	)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +122,6 @@ func TestSpiceModelCustomizer(t *testing.T) {
 		grpcutil.WithInsecureBearerToken(defaultSecretKey),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-
 	if err != nil {
 		t.Fatal(err)
 	}

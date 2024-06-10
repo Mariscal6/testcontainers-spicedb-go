@@ -8,10 +8,11 @@ import (
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -78,12 +79,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
+	c := &spiceDBContainer{Container: container, secretKey: cfg.SecretKey, model: cfg.Model}
+
 	endpoint, err := container.Endpoint(ctx, "")
 	if err != nil {
-		container.Terminate(ctx)
-		return nil, err
+		return c, err
 	}
-	return &spiceDBContainer{Container: container, secretKey: cfg.SecretKey, endpoint: endpoint, model: cfg.Model}, nil
+
+	c.endpoint = endpoint
+
+	return c, nil
 }
 
 func WithOtel(otelProvider string, enpoint string) testcontainers.CustomizeRequestOption {

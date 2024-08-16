@@ -33,8 +33,14 @@ func (c *spiceDBContainer) GetEndpoint(ctx context.Context) string {
 	return c.endpoint
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the spiceDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*spiceDBContainer, error) {
+	return Run(ctx, "authzed/spicedb:v1.33.0", opts...)
+}
+
+// Run creates an instance of the spiceDB container type
+func Run(ctx context.Context, image string, opts ...testcontainers.ContainerCustomizer) (*spiceDBContainer, error) {
 	cfg := Config{
 		SecretKey: defaultSecretKey,
 	}

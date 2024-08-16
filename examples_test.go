@@ -6,15 +6,13 @@ import (
 	"log"
 
 	spicedb "github.com/Mariscal6/testcontainers-spicedb-go"
-
-	"github.com/testcontainers/testcontainers-go"
 )
 
 func ExampleRunContainer() {
 	// runspiceDBContainer {
 	ctx := context.Background()
 
-	spicedbContainer, err := spicedb.RunContainer(ctx, testcontainers.WithImage("authzed/spicedb:v1.33.0"))
+	spicedbContainer, err := spicedb.Run(ctx, "authzed/spicedb:v1.33.0")
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

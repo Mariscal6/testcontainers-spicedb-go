@@ -19,8 +19,8 @@ import (
 func TestSpiceDB(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := spicedbcontainer.RunContainer(ctx,
-		testcontainers.WithImage("authzed/spicedb:v1.33.0"),
+	container, err := spicedbcontainer.Run(ctx,
+		"authzed/spicedb:v1.33.0",
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -60,8 +60,8 @@ func TestSpiceDBSecretCustomizer(t *testing.T) {
 	customizer := spicedbcontainer.SecretKeyCustomizer{
 		SecretKey: secretKey,
 	}
-	container, err := spicedbcontainer.RunContainer(ctx,
-		testcontainers.WithImage("authzed/spicedb:v1.33.0"),
+	container, err := spicedbcontainer.Run(ctx,
+		"authzed/spicedb:v1.33.0",
 		customizer,
 	)
 	if err != nil {
@@ -124,8 +124,8 @@ func TestSpiceModelCustomizer(t *testing.T) {
 			return err
 		},
 	}
-	container, err := spicedbcontainer.RunContainer(ctx,
-		testcontainers.WithImage("authzed/spicedb:v1.33.0"),
+	container, err := spicedbcontainer.Run(ctx,
+		"authzed/spicedb:v1.33.0",
 		modelCustomizer,
 	)
 	if err != nil {

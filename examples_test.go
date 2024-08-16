@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	spicedb "github.com/mariscal6/testcontainers-spicedb-go"
+	spicedb "github.com/Mariscal6/testcontainers-spicedb-go"
 
 	"github.com/testcontainers/testcontainers-go"
 )

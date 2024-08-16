@@ -1,4 +1,4 @@
-module github.com/mariscal6/testcontainers-spicedb-go
+module github.com/Mariscal6/testcontainers-spicedb-go
 
 go 1.21
 

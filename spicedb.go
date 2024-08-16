@@ -3,13 +3,6 @@ package spicedb
 import (
 	"context"
 	"fmt"
-	"time"
-
-	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
-	"github.com/authzed/authzed-go/v1"
-	"github.com/authzed/grpcutil"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -122,8 +115,9 @@ func (customizer SecretKeyCustomizer) Customize(req *testcontainers.GenericConta
 }
 
 type ModelCustomizer struct {
-	Model     string
-	SecretKey string
+	Model         string
+	SecretKey     string
+	SchremaWriter func(ctx context.Context, c testcontainers.Container, model string, secret string) error
 }
 
 // Customize method implementation
@@ -131,25 +125,7 @@ func (customizer ModelCustomizer) Customize(req *testcontainers.GenericContainer
 	req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 		PostStarts: []testcontainers.ContainerHook{
 			func(ctx context.Context, c testcontainers.Container) error {
-				// replace with a health check
-				time.Sleep(2 * time.Second)
-				endpoint, err := c.Endpoint(ctx, "")
-				if err != nil {
-					return err
-				}
-
-				client, err := authzed.NewClient(
-					endpoint,
-					grpcutil.WithInsecureBearerToken(customizer.SecretKey),
-					grpc.WithTransportCredentials(insecure.NewCredentials()),
-				)
-				if err != nil {
-					return err
-				}
-				_, err = client.SchemaServiceClient.WriteSchema(ctx, &v1.WriteSchemaRequest{
-					Schema: customizer.Model,
-				})
-				return err
+				return customizer.SchremaWriter(ctx, c, customizer.Model, customizer.SecretKey)
 			},
 		},
 	})

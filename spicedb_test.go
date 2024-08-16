@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
+	spicedbcontainer "github.com/Mariscal6/testcontainers-spicedb-go"
+	"github.com/Mariscal6/testcontainers-spicedb-go/testdata"
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
-	spicedbcontainer "github.com/mariscal6/testcontainers-spicedb-go"
-	"github.com/mariscal6/testcontainers-spicedb-go/testdata"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 

@@ -3,6 +3,7 @@ package spicedb_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	spicedbcontainer "github.com/Mariscal6/testcontainers-spicedb-go"
 	"github.com/Mariscal6/testcontainers-spicedb-go/testdata"
@@ -101,6 +102,27 @@ func TestSpiceModelCustomizer(t *testing.T) {
 	modelCustomizer := spicedbcontainer.ModelCustomizer{
 		SecretKey: defaultSecretKey,
 		Model:     testdata.MODEL,
+		SchremaWriter: func(ctx context.Context, c testcontainers.Container, model string, secret string) error {
+			time.Sleep(2 * time.Second)
+			endpoint, err := c.Endpoint(ctx, "")
+			if err != nil {
+				return err
+			}
+
+			client, err := authzed.NewClient(
+				endpoint,
+				grpcutil.WithInsecureBearerToken(secret),
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+			)
+			if err != nil {
+				return err
+			}
+
+			_, err = client.SchemaServiceClient.WriteSchema(ctx, &v1.WriteSchemaRequest{
+				Schema: model,
+			})
+			return err
+		},
 	}
 	container, err := spicedbcontainer.RunContainer(ctx,
 		testcontainers.WithImage("authzed/spicedb:v1.33.0"),

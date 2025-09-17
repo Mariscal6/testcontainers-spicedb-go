@@ -45,7 +45,7 @@ func Run(ctx context.Context, image string, opts ...testcontainers.ContainerCust
 		SecretKey: defaultSecretKey,
 	}
 	req := testcontainers.ContainerRequest{
-		Image:        "authzed/spicedb:v1.33.0",
+		Image:        image,
 		ExposedPorts: []string{"50051/tcp"},
 		Cmd:          []string{"serve", "--grpc-preshared-key", defaultSecretKey},
 		WaitingFor: wait.ForAll(

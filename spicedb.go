@@ -2,7 +2,7 @@ package spicedb
 
 import (
 	"context"
-	"fmt"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -44,36 +44,15 @@ func Run(ctx context.Context, image string, opts ...testcontainers.ContainerCust
 	cfg := Config{
 		SecretKey: defaultSecretKey,
 	}
-	req := testcontainers.ContainerRequest{
-		Image:        image,
-		ExposedPorts: []string{"50051/tcp"},
-		Cmd:          []string{"serve", "--grpc-preshared-key", defaultSecretKey},
-		WaitingFor: wait.ForAll(
-			wait.ForLog("http server started serving"),
-			// TODO: add a health grpc healthz check
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("50051/tcp"),
+		testcontainers.WithCmd("serve", "--grpc-preshared-key", defaultSecretKey),
+		testcontainers.WithWaitStrategy(
+			wait.ForAll(wait.ForExposedPort().WithPollInterval(2 * time.Second)),
 		),
 	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-
-		if secretKeyCustomizer, ok := opt.(SecretKeyCustomizer); ok {
-			cfg.SecretKey = secretKeyCustomizer.SecretKey
-		}
-
-		if modelCustomizer, ok := opt.(ModelCustomizer); ok {
-			cfg.Model = modelCustomizer.Model
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts = append(moduleOpts, opts...)
+	container, err := testcontainers.Run(ctx, image, moduleOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +108,7 @@ type ModelCustomizer struct {
 // Customize method implementation
 func (customizer ModelCustomizer) Customize(req *testcontainers.GenericContainerRequest) error {
 	req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
-		PostStarts: []testcontainers.ContainerHook{
+		PostReadies: []testcontainers.ContainerHook{
 			func(ctx context.Context, c testcontainers.Container) error {
 				return customizer.SchremaWriter(ctx, c, customizer.Model, customizer.SecretKey)
 			},

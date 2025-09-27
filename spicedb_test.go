@@ -3,7 +3,6 @@ package spicedb_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	spicedbcontainer "github.com/Mariscal6/testcontainers-spicedb-go"
 	"github.com/Mariscal6/testcontainers-spicedb-go/testdata"
@@ -103,7 +102,6 @@ func TestSpiceModelCustomizer(t *testing.T) {
 		SecretKey: defaultSecretKey,
 		Model:     testdata.MODEL,
 		SchremaWriter: func(ctx context.Context, c testcontainers.Container, model string, secret string) error {
-			time.Sleep(2 * time.Second)
 			endpoint, err := c.Endpoint(ctx, "")
 			if err != nil {
 				return err

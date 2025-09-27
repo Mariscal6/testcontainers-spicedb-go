@@ -29,7 +29,7 @@ func (c *spiceDBContainer) SecretKey() string {
 	return c.secretKey
 }
 
-func (c *spiceDBContainer) GetEndpoint(ctx context.Context) string {
+func (c *spiceDBContainer) GetEndpoint(_ context.Context) string {
 	return c.endpoint
 }
 
@@ -99,8 +99,8 @@ func WithOtel(otelProvider string, enpoint string) testcontainers.CustomizeReque
 
 func WithHTTP(port string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, "--http-enabled", "--http-addr", fmt.Sprintf(":%s", port))
-		req.ExposedPorts = append(req.ExposedPorts, fmt.Sprintf("%s/tcp", port))
+		req.Cmd = append(req.Cmd, "--http-enabled", "--http-addr", ":"+port)
+		req.ExposedPorts = append(req.ExposedPorts, port+"/tcp")
 		return nil
 	}
 }

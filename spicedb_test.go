@@ -43,7 +43,7 @@ func TestSpiceDB(t *testing.T) {
 	}
 
 	// perform assertions
-	res, err := spicedbClient.SchemaServiceClient.WriteSchema(ctx, &v1.WriteSchemaRequest{
+	res, err := spicedbClient.WriteSchema(ctx, &v1.WriteSchemaRequest{
 		Schema: testdata.MODEL,
 	})
 	if err != nil {
@@ -85,7 +85,7 @@ func TestSpiceDBSecretCustomizer(t *testing.T) {
 	}
 
 	// perform assertions
-	res, err := spicedbClient.SchemaServiceClient.WriteSchema(ctx, &v1.WriteSchemaRequest{
+	res, err := spicedbClient.WriteSchema(ctx, &v1.WriteSchemaRequest{
 		Schema: testdata.MODEL,
 	})
 	if err != nil {
@@ -118,7 +118,7 @@ func TestSpiceModelCustomizer(t *testing.T) {
 				return err
 			}
 
-			_, err = client.SchemaServiceClient.WriteSchema(ctx, &v1.WriteSchemaRequest{
+			_, err = client.WriteSchema(ctx, &v1.WriteSchemaRequest{
 				Schema: model,
 			})
 			return err

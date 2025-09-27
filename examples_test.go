@@ -20,14 +20,14 @@ func ExampleRunContainer() {
 	// Clean up the container
 	defer func() {
 		if err := spicedbContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+			log.Fatalf("failed to terminate container: %s", err)
 		}
 	}()
 	// }
 
 	state, err := spicedbContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Fatalf("failed to get container state: %s", err) //nolint:gocritic
 	}
 
 	fmt.Println(state.Running)

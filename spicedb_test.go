@@ -1,24 +1,21 @@
-package spicedb_test
+package spicedb
 
 import (
 	"context"
 	"testing"
 
-	spicedbcontainer "github.com/Mariscal6/testcontainers-spicedb-go"
 	"github.com/Mariscal6/testcontainers-spicedb-go/testdata"
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestSpiceDB(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := spicedbcontainer.Run(ctx,
+	container, err := Run(ctx,
 		"authzed/spicedb:v1.33.0",
 	)
 	if err != nil {
@@ -56,15 +53,19 @@ func TestSpiceDB(t *testing.T) {
 func TestSpiceDBSecretCustomizer(t *testing.T) {
 	ctx := context.Background()
 	const secretKey = "testsecret"
-	customizer := spicedbcontainer.SecretKeyCustomizer{
+	customizer := SecretKeyCustomizer{
 		SecretKey: secretKey,
 	}
-	container, err := spicedbcontainer.Run(ctx,
+	container, err := Run(ctx,
 		"authzed/spicedb:v1.33.0",
 		customizer,
 	)
 	if err != nil {
 		t.Fatal(err)
+	}
+	secretV := container.SecretKey()
+	if secretV != secretKey {
+		t.Fatal("secret key does not match the setted value")
 	}
 
 	// Clean up the container after the test is complete
@@ -98,7 +99,7 @@ func TestSpiceDBSecretCustomizer(t *testing.T) {
 func TestSpiceModelCustomizer(t *testing.T) {
 	ctx := context.Background()
 	const defaultSecretKey = "somepresharedkey"
-	modelCustomizer := spicedbcontainer.ModelCustomizer{
+	modelCustomizer := ModelCustomizer{
 		SecretKey: defaultSecretKey,
 		Model:     testdata.MODEL,
 		SchremaWriter: func(ctx context.Context, c testcontainers.Container, model string, secret string) error {
@@ -122,14 +123,17 @@ func TestSpiceModelCustomizer(t *testing.T) {
 			return err
 		},
 	}
-	container, err := spicedbcontainer.Run(ctx,
+	container, err := Run(ctx,
 		"authzed/spicedb:v1.33.0",
 		modelCustomizer,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	// should be only accesible on the tests, model it's not needed for the client
+	if container.model != testdata.MODEL {
+		t.Fatal("model does not match the setted value")
+	}
 	// Clean up the container after the test is complete
 	t.Cleanup(func() {
 		if err := container.Terminate(ctx); err != nil {

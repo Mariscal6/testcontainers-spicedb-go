@@ -51,6 +51,16 @@ func Run(ctx context.Context, image string, opts ...testcontainers.ContainerCust
 			wait.ForAll(wait.ForExposedPort().WithPollInterval(2 * time.Second)),
 		),
 	}
+	for _, opt := range opts {
+		if secretKeyCustomizer, ok := opt.(SecretKeyCustomizer); ok {
+			cfg.SecretKey = secretKeyCustomizer.SecretKey
+		}
+
+		if modelCustomizer, ok := opt.(ModelCustomizer); ok {
+			cfg.Model = modelCustomizer.Model
+		}
+	}
+
 	moduleOpts = append(moduleOpts, opts...)
 	container, err := testcontainers.Run(ctx, image, moduleOpts...)
 	if err != nil {

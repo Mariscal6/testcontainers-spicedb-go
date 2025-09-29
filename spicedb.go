@@ -2,7 +2,13 @@ package spicedb
 
 import (
 	"context"
-	"fmt"
+	"time"
+
+	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
+	"github.com/authzed/authzed-go/v1"
+	"github.com/authzed/grpcutil"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -29,7 +35,7 @@ func (c *spiceDBContainer) SecretKey() string {
 	return c.secretKey
 }
 
-func (c *spiceDBContainer) GetEndpoint(ctx context.Context) string {
+func (c *spiceDBContainer) GetEndpoint(_ context.Context) string {
 	return c.endpoint
 }
 
@@ -44,26 +50,14 @@ func Run(ctx context.Context, image string, opts ...testcontainers.ContainerCust
 	cfg := Config{
 		SecretKey: defaultSecretKey,
 	}
-	req := testcontainers.ContainerRequest{
-		Image:        image,
-		ExposedPorts: []string{"50051/tcp"},
-		Cmd:          []string{"serve", "--grpc-preshared-key", defaultSecretKey},
-		WaitingFor: wait.ForAll(
-			wait.ForLog("http server started serving"),
-			// TODO: add a health grpc healthz check
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("50051/tcp"),
+		testcontainers.WithCmd("serve", "--grpc-preshared-key", defaultSecretKey),
+		testcontainers.WithWaitStrategy(
+			wait.ForAll(wait.ForExposedPort().WithPollInterval(2 * time.Second)),
 		),
 	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-
 		if secretKeyCustomizer, ok := opt.(SecretKeyCustomizer); ok {
 			cfg.SecretKey = secretKeyCustomizer.SecretKey
 		}
@@ -73,7 +67,8 @@ func Run(ctx context.Context, image string, opts ...testcontainers.ContainerCust
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts = append(moduleOpts, opts...)
+	container, err := testcontainers.Run(ctx, image, moduleOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,13 +94,15 @@ func WithOtel(otelProvider string, enpoint string) testcontainers.CustomizeReque
 
 func WithHTTP(port string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, "--http-enabled", "--http-addr", fmt.Sprintf(":%s", port))
-		req.ExposedPorts = append(req.ExposedPorts, fmt.Sprintf("%s/tcp", port))
+		req.Cmd = append(req.Cmd, "--http-enabled", "--http-addr", ":"+port)
+		req.ExposedPorts = append(req.ExposedPorts, port+"/tcp")
 		return nil
 	}
 }
 
+// allows to specify a custom secret key for the spiceDB container
 type SecretKeyCustomizer struct {
+	// SecretKey is the gRPC pre-shared key to set in the SpiceDB container.
 	SecretKey string
 }
 
@@ -120,20 +117,55 @@ func (customizer SecretKeyCustomizer) Customize(req *testcontainers.GenericConta
 	return nil
 }
 
+// ModelCustomizer allows you to set a custom schema/model for the SpiceDB container
+// and optionally provide a custom schema writer function.
 type ModelCustomizer struct {
-	Model         string
-	SecretKey     string
+	// Model is the schema definition to be written to the SpiceDB instance.
+	Model string
+
+	// SecretKey is the gRPC pre-shared key used for authenticating schema writes.
+	SecretKey string
+
+	// SchremaWriter is an optional custom function that writes the schema
+	// to the SpiceDB container. If nil, the defaultSchemaWriterFunc is used.
 	SchremaWriter func(ctx context.Context, c testcontainers.Container, model string, secret string) error
 }
 
 // Customize method implementation
 func (customizer ModelCustomizer) Customize(req *testcontainers.GenericContainerRequest) error {
 	req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
-		PostStarts: []testcontainers.ContainerHook{
+		PostReadies: []testcontainers.ContainerHook{
 			func(ctx context.Context, c testcontainers.Container) error {
+				if customizer.SchremaWriter == nil {
+					return customizer.defaultSchemaWriterfunc(ctx, c)
+				}
 				return customizer.SchremaWriter(ctx, c, customizer.Model, customizer.SecretKey)
 			},
 		},
 	})
 	return nil
+}
+
+// defaultSchemaWriterfunc writes the Model schema to the SpiceDB container
+// using the configured SecretKey. It is called by default if no custom SchremaWriter
+// is provided.
+func (customizer ModelCustomizer) defaultSchemaWriterfunc(ctx context.Context, c testcontainers.Container) error {
+	endpoint, err := c.Endpoint(ctx, "")
+	if err != nil {
+		return err
+	}
+
+	client, err := authzed.NewClient(
+		endpoint,
+		grpcutil.WithInsecureBearerToken(customizer.SecretKey),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.WriteSchema(ctx, &v1.WriteSchemaRequest{
+		Schema: customizer.Model,
+	})
+	return err
 }

@@ -100,7 +100,9 @@ func WithHTTP(port string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// allows to specify a custom secret key for the spiceDB container
 type SecretKeyCustomizer struct {
+	// SecretKey is the gRPC pre-shared key to set in the SpiceDB container.
 	SecretKey string
 }
 
@@ -115,9 +117,17 @@ func (customizer SecretKeyCustomizer) Customize(req *testcontainers.GenericConta
 	return nil
 }
 
+// ModelCustomizer allows you to set a custom schema/model for the SpiceDB container
+// and optionally provide a custom schema writer function.
 type ModelCustomizer struct {
-	Model         string
-	SecretKey     string
+	// Model is the schema definition to be written to the SpiceDB instance.
+	Model string
+
+	// SecretKey is the gRPC pre-shared key used for authenticating schema writes.
+	SecretKey string
+
+	// SchremaWriter is an optional custom function that writes the schema
+	// to the SpiceDB container. If nil, the defaultSchemaWriterFunc is used.
 	SchremaWriter func(ctx context.Context, c testcontainers.Container, model string, secret string) error
 }
 
@@ -136,6 +146,9 @@ func (customizer ModelCustomizer) Customize(req *testcontainers.GenericContainer
 	return nil
 }
 
+// defaultSchemaWriterfunc writes the Model schema to the SpiceDB container
+// using the configured SecretKey. It is called by default if no custom SchremaWriter
+// is provided.
 func (customizer ModelCustomizer) defaultSchemaWriterfunc(ctx context.Context, c testcontainers.Container) error {
 	endpoint, err := c.Endpoint(ctx, "")
 	if err != nil {

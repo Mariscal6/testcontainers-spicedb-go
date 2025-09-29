@@ -4,6 +4,12 @@ import (
 	"context"
 	"time"
 
+	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
+	"github.com/authzed/authzed-go/v1"
+	"github.com/authzed/grpcutil"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -120,9 +126,33 @@ func (customizer ModelCustomizer) Customize(req *testcontainers.GenericContainer
 	req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 		PostReadies: []testcontainers.ContainerHook{
 			func(ctx context.Context, c testcontainers.Container) error {
+				if customizer.SchremaWriter == nil {
+					return customizer.defaultSchemaWriterfunc(ctx, c)
+				}
 				return customizer.SchremaWriter(ctx, c, customizer.Model, customizer.SecretKey)
 			},
 		},
 	})
 	return nil
+}
+
+func (customizer ModelCustomizer) defaultSchemaWriterfunc(ctx context.Context, c testcontainers.Container) error {
+	endpoint, err := c.Endpoint(ctx, "")
+	if err != nil {
+		return err
+	}
+
+	client, err := authzed.NewClient(
+		endpoint,
+		grpcutil.WithInsecureBearerToken(customizer.SecretKey),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.WriteSchema(ctx, &v1.WriteSchemaRequest{
+		Schema: customizer.Model,
+	})
+	return err
 }

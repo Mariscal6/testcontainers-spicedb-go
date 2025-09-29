@@ -102,26 +102,6 @@ func TestSpiceModelCustomizer(t *testing.T) {
 	modelCustomizer := ModelCustomizer{
 		SecretKey: defaultSecretKey,
 		Model:     testdata.MODEL,
-		SchremaWriter: func(ctx context.Context, c testcontainers.Container, model string, secret string) error {
-			endpoint, err := c.Endpoint(ctx, "")
-			if err != nil {
-				return err
-			}
-
-			client, err := authzed.NewClient(
-				endpoint,
-				grpcutil.WithInsecureBearerToken(secret),
-				grpc.WithTransportCredentials(insecure.NewCredentials()),
-			)
-			if err != nil {
-				return err
-			}
-
-			_, err = client.WriteSchema(ctx, &v1.WriteSchemaRequest{
-				Schema: model,
-			})
-			return err
-		},
 	}
 	container, err := Run(ctx,
 		"authzed/spicedb:v1.33.0",

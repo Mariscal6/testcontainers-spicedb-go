@@ -54,7 +54,10 @@ func Run(ctx context.Context, image string, opts ...testcontainers.ContainerCust
 		testcontainers.WithExposedPorts("50051/tcp"),
 		testcontainers.WithCmd("serve", "--grpc-preshared-key", defaultSecretKey),
 		testcontainers.WithWaitStrategy(
-			wait.ForAll(wait.ForExposedPort().WithPollInterval(2 * time.Second)),
+			wait.ForAll(
+				wait.ForExposedPort().WithPollInterval(2*time.Second),
+				wait.ForLog("grpc server started serving"),
+			),
 		),
 	}
 	for _, opt := range opts {
